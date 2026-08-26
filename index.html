@@ -858,16 +858,8 @@ function renderFlow() {
   svg.setAttribute('width', wRect.width);
   svg.setAttribute('height', wRect.height);
 
-  let defs = `<defs>
-    <marker id="arrow-fwd" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#6c8cff"/>
-    </marker>
-    <marker id="arrow-bwd" markerWidth="10" markerHeight="7" refX="1" refY="3.5" orient="auto-start-reverse">
-      <polygon points="10 0, 0 3.5, 10 7" fill="#6c8cff"/>
-    </marker>
-  </defs>`;
-
-  let lines = '';
+  let svgContent = '';
+  let arrowElements = '';
 
   // Remove old edge labels
   document.querySelectorAll('.edge-label').forEach(el => el.remove());
@@ -887,35 +879,53 @@ function renderFlow() {
     const y2 = toNode.y + toEl.offsetHeight / 2;
 
     const dir = edge.direction || 'forward';
-    let markerStart = '';
-    let markerEnd = '';
 
-    if (dir === 'forward') {
-      markerEnd = 'marker-end="url(#arrow-fwd)"';
-    } else if (dir === 'backward') {
-      markerStart = 'marker-start="url(#arrow-bwd)"';
-    } else if (dir === 'both') {
-      markerEnd = 'marker-end="url(#arrow-fwd)"';
-      markerStart = 'marker-start="url(#arrow-bwd)"';
+    // Draw the line
+    svgContent += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#6c8cff" stroke-width="2" opacity="0.6"/>`;
+
+    // Draw arrowheads as triangles along the line
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const arrowSize = 12;
+
+    if (dir === 'forward' || dir === 'both') {
+      // Arrow pointing toward target, placed 70% along the line
+      const ax = x1 + (x2 - x1) * 0.7;
+      const ay = y1 + (y2 - y1) * 0.7;
+      const p1x = ax + arrowSize * Math.cos(angle);
+      const p1y = ay + arrowSize * Math.sin(angle);
+      const p2x = ax + arrowSize * Math.cos(angle + 2.5);
+      const p2y = ay + arrowSize * Math.sin(angle + 2.5);
+      const p3x = ax + arrowSize * Math.cos(angle - 2.5);
+      const p3y = ay + arrowSize * Math.sin(angle - 2.5);
+      svgContent += `<polygon points="${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}" fill="#6c8cff" opacity="0.9"/>`;
     }
 
-    lines += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#6c8cff" stroke-width="1.5" ${markerEnd} ${markerStart} opacity="0.6"/>`;
+    if (dir === 'backward' || dir === 'both') {
+      // Arrow pointing toward source, placed 30% along the line
+      const ax = x1 + (x2 - x1) * 0.3;
+      const ay = y1 + (y2 - y1) * 0.3;
+      const reverseAngle = angle + Math.PI;
+      const p1x = ax + arrowSize * Math.cos(reverseAngle);
+      const p1y = ay + arrowSize * Math.sin(reverseAngle);
+      const p2x = ax + arrowSize * Math.cos(reverseAngle + 2.5);
+      const p2y = ay + arrowSize * Math.sin(reverseAngle + 2.5);
+      const p3x = ax + arrowSize * Math.cos(reverseAngle - 2.5);
+      const p3y = ay + arrowSize * Math.sin(reverseAngle - 2.5);
+      svgContent += `<polygon points="${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}" fill="#6c8cff" opacity="0.9"/>`;
+    }
 
     // Edge label
-    const labelText = edge.label || (dir !== 'forward' ? dir : '');
-    if (labelText || true) {
-      const label = document.createElement('div');
-      label.className = 'edge-label';
-      label.textContent = edge.label || '(click to label)';
-      if (!edge.label) label.style.opacity = '0.4';
-      label.style.left = ((x1 + x2) / 2 - 50) + 'px';
-      label.style.top = ((y1 + y2) / 2 - 10) + 'px';
-      label.onclick = () => editEdge(edge.id);
-      wrap.appendChild(label);
-    }
+    const label = document.createElement('div');
+    label.className = 'edge-label';
+    label.textContent = edge.label || '(click to label)';
+    if (!edge.label) label.style.opacity = '0.4';
+    label.style.left = ((x1 + x2) / 2 - 50) + 'px';
+    label.style.top = ((y1 + y2) / 2 - 10) + 'px';
+    label.onclick = () => editEdge(edge.id);
+    wrap.appendChild(label);
   });
 
-  svg.innerHTML = defs + lines;
+  svg.innerHTML = svgContent;
 
   // Attach node events
   nodesContainer.querySelectorAll('.flow-node').forEach(el => {
