@@ -200,13 +200,13 @@ body {
 
 .edge-arrow {
   position: absolute;
-  width: 0;
-  height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-bottom: 14px solid #6c8cff;
-  z-index: 4;
+  width: 20px;
+  height: 20px;
+  background: #6c8cff;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  z-index: 15;
   pointer-events: none;
+  transform-origin: center center;
 }
 
 /* ===== OPEN QUESTIONS ===== */
@@ -902,9 +902,9 @@ function renderFlow() {
       const ay = y1 + (y2 - y1) * 0.7;
       const arrow = document.createElement('div');
       arrow.className = 'edge-arrow';
-      arrow.style.left = (ax - 7) + 'px';
-      arrow.style.top = (ay - 7) + 'px';
-      arrow.style.transform = `rotate(${angleDeg}deg)`;
+      arrow.style.left = (ax - 10) + 'px';
+      arrow.style.top = (ay - 10) + 'px';
+      arrow.style.transform = 'rotate(' + angleDeg + 'deg)';
       wrap.appendChild(arrow);
     }
 
@@ -913,9 +913,9 @@ function renderFlow() {
       const ay = y1 + (y2 - y1) * 0.3;
       const arrow = document.createElement('div');
       arrow.className = 'edge-arrow';
-      arrow.style.left = (ax - 7) + 'px';
-      arrow.style.top = (ay - 7) + 'px';
-      arrow.style.transform = `rotate(${angleDeg + 180}deg)`;
+      arrow.style.left = (ax - 10) + 'px';
+      arrow.style.top = (ay - 10) + 'px';
+      arrow.style.transform = 'rotate(' + (angleDeg + 180) + 'deg)';
       wrap.appendChild(arrow);
     }
 
