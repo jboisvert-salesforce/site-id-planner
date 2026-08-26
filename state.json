@@ -60,16 +60,16 @@
       "id": "n8",
       "title": "Rescore from Results",
       "desc": "Feasibility results feed back. Site scored 7 might drop to 3. Track reasons.",
-      "x": 350,
-      "y": 420,
+      "x": 365,
+      "y": 635,
       "color": "accent"
     },
     {
       "id": "n9",
       "title": "Site Exclusion/Inclusion",
       "desc": "Exclude sites with tracked reasons. Can re-include later. History preserved.",
-      "x": 650,
-      "y": 420,
+      "x": 954,
+      "y": 608,
       "color": "warning"
     }
   ],
