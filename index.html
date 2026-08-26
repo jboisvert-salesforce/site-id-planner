@@ -198,6 +198,17 @@ body {
 
 .edge-label:hover { border-color: var(--accent); color: var(--text); }
 
+.edge-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 14px solid #6c8cff;
+  z-index: 4;
+  pointer-events: none;
+}
+
 /* ===== OPEN QUESTIONS ===== */
 #questions-panel { padding: 20px 24px; overflow-y: auto; }
 
@@ -859,10 +870,9 @@ function renderFlow() {
   svg.setAttribute('height', wRect.height);
 
   let svgContent = '';
-  let arrowElements = '';
 
-  // Remove old edge labels
-  document.querySelectorAll('.edge-label').forEach(el => el.remove());
+  // Remove old edge labels and arrows
+  document.querySelectorAll('.edge-label, .edge-arrow').forEach(el => el.remove());
 
   state.edges.forEach(edge => {
     const fromNode = state.nodes.find(n => n.id === edge.from);
@@ -883,35 +893,30 @@ function renderFlow() {
     // Draw the line
     svgContent += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#6c8cff" stroke-width="2" opacity="0.6"/>`;
 
-    // Draw arrowheads as triangles along the line
+    // Draw arrowheads as CSS triangles (HTML divs)
     const angle = Math.atan2(y2 - y1, x2 - x1);
-    const arrowSize = 12;
+    const angleDeg = angle * (180 / Math.PI) - 90; // CSS rotation: -90 because border-bottom points up by default
 
     if (dir === 'forward' || dir === 'both') {
-      // Arrow pointing toward target, placed 70% along the line
       const ax = x1 + (x2 - x1) * 0.7;
       const ay = y1 + (y2 - y1) * 0.7;
-      const p1x = ax + arrowSize * Math.cos(angle);
-      const p1y = ay + arrowSize * Math.sin(angle);
-      const p2x = ax + arrowSize * Math.cos(angle + 2.5);
-      const p2y = ay + arrowSize * Math.sin(angle + 2.5);
-      const p3x = ax + arrowSize * Math.cos(angle - 2.5);
-      const p3y = ay + arrowSize * Math.sin(angle - 2.5);
-      svgContent += `<polygon points="${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}" fill="#6c8cff" opacity="0.9"/>`;
+      const arrow = document.createElement('div');
+      arrow.className = 'edge-arrow';
+      arrow.style.left = (ax - 7) + 'px';
+      arrow.style.top = (ay - 7) + 'px';
+      arrow.style.transform = `rotate(${angleDeg}deg)`;
+      wrap.appendChild(arrow);
     }
 
     if (dir === 'backward' || dir === 'both') {
-      // Arrow pointing toward source, placed 30% along the line
       const ax = x1 + (x2 - x1) * 0.3;
       const ay = y1 + (y2 - y1) * 0.3;
-      const reverseAngle = angle + Math.PI;
-      const p1x = ax + arrowSize * Math.cos(reverseAngle);
-      const p1y = ay + arrowSize * Math.sin(reverseAngle);
-      const p2x = ax + arrowSize * Math.cos(reverseAngle + 2.5);
-      const p2y = ay + arrowSize * Math.sin(reverseAngle + 2.5);
-      const p3x = ax + arrowSize * Math.cos(reverseAngle - 2.5);
-      const p3y = ay + arrowSize * Math.sin(reverseAngle - 2.5);
-      svgContent += `<polygon points="${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}" fill="#6c8cff" opacity="0.9"/>`;
+      const arrow = document.createElement('div');
+      arrow.className = 'edge-arrow';
+      arrow.style.left = (ax - 7) + 'px';
+      arrow.style.top = (ay - 7) + 'px';
+      arrow.style.transform = `rotate(${angleDeg + 180}deg)`;
+      wrap.appendChild(arrow);
     }
 
     // Edge label
