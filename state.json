@@ -28,8 +28,8 @@
       "id": "n4",
       "title": "Scoring & Weighting",
       "desc": "Apply velocity/enrollment/engagement weights. Future: customer-defined bucket",
-      "x": 650,
-      "y": 250,
+      "x": 937,
+      "y": 249,
       "color": "warning"
     },
     {
@@ -233,13 +233,6 @@
       "category": "scoring",
       "priority": "low",
       "notes": "Soft factors: were they responsive? problematic? Sites hate redundant questions. CROs want to be \"swiped right.\" Sentiment early triggers."
-    },
-    {
-      "id": "q11",
-      "text": "What is the Dreamforce booth demo scope (3-5 min)?",
-      "category": "product",
-      "priority": "low",
-      "notes": "Must caveat as inspirational. Risk: customer thinks product → SI builds for $3M/2yr → customer burned → never comes back."
     }
   ],
   "matrix": [
