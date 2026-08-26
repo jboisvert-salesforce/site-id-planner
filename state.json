@@ -1,0 +1,338 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "title": "Protocol Ingestion",
+      "desc": "Document AI parses protocol → extracts requirements, geo, therapeutic area",
+      "x": 80,
+      "y": 80,
+      "color": "warning"
+    },
+    {
+      "id": "n2",
+      "title": "Geospatial Grounding",
+      "desc": "Define country mix, patient radius, geographic rules. Lives on SCENARIO.",
+      "x": 350,
+      "y": 80,
+      "color": "default"
+    },
+    {
+      "id": "n3",
+      "title": "Hard Filter Application",
+      "desc": "Match protocol requirements to site capabilities (freezer, imaging, lab certs)",
+      "x": 650,
+      "y": 80,
+      "color": "success"
+    },
+    {
+      "id": "n4",
+      "title": "Scoring & Weighting",
+      "desc": "Apply velocity/enrollment/engagement weights. Future: customer-defined bucket",
+      "x": 650,
+      "y": 250,
+      "color": "warning"
+    },
+    {
+      "id": "n5",
+      "title": "Scenario Creation",
+      "desc": "Create/clone/edit scenarios. Each is a named collection of sites with weights",
+      "x": 350,
+      "y": 250,
+      "color": "success"
+    },
+    {
+      "id": "n6",
+      "title": "Feasibility Assessment",
+      "desc": "Send questionnaire to selected sites. 2-week runway. Pre-fill from history.",
+      "x": 80,
+      "y": 250,
+      "color": "danger"
+    },
+    {
+      "id": "n7",
+      "title": "Workflow Approval",
+      "desc": "Approve scenario for feasibility send. Re-approval needed after edits.",
+      "x": 80,
+      "y": 420,
+      "color": "danger"
+    },
+    {
+      "id": "n8",
+      "title": "Rescore from Results",
+      "desc": "Feasibility results feed back. Site scored 7 might drop to 3. Track reasons.",
+      "x": 350,
+      "y": 420,
+      "color": "accent"
+    },
+    {
+      "id": "n9",
+      "title": "Site Exclusion/Inclusion",
+      "desc": "Exclude sites with tracked reasons. Can re-include later. History preserved.",
+      "x": 650,
+      "y": 420,
+      "color": "warning"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "label": "extracts geo rules",
+      "desc": "",
+      "direction": "forward"
+    },
+    {
+      "id": "e2",
+      "from": "n1",
+      "to": "n3",
+      "label": "extracts requirements",
+      "desc": "AI fuzzy-matches protocol text to existing filter fields",
+      "direction": "forward"
+    },
+    {
+      "id": "e3",
+      "from": "n2",
+      "to": "n3",
+      "label": "narrows pool",
+      "desc": "",
+      "direction": "forward"
+    },
+    {
+      "id": "e4",
+      "from": "n3",
+      "to": "n4",
+      "label": "filtered sites",
+      "desc": "",
+      "direction": "forward"
+    },
+    {
+      "id": "e5",
+      "from": "n4",
+      "to": "n5",
+      "label": "ranked list",
+      "desc": "",
+      "direction": "forward"
+    },
+    {
+      "id": "e6",
+      "from": "n5",
+      "to": "n6",
+      "label": "chosen scenario",
+      "desc": "Only the selected scenario goes to feasibility",
+      "direction": "forward"
+    },
+    {
+      "id": "e7",
+      "from": "n5",
+      "to": "n7",
+      "label": "needs approval",
+      "desc": "Workflow approval required before feasibility send",
+      "direction": "forward"
+    },
+    {
+      "id": "e8",
+      "from": "n6",
+      "to": "n8",
+      "label": "results return",
+      "desc": "~2 weeks. Answers populate fields on site record.",
+      "direction": "forward"
+    },
+    {
+      "id": "e9",
+      "from": "n8",
+      "to": "n9",
+      "label": "triggers exclusion",
+      "desc": "e.g., freezer broke → exclude with reason",
+      "direction": "forward"
+    },
+    {
+      "id": "e10",
+      "from": "n8",
+      "to": "n5",
+      "label": "feeds back",
+      "desc": "New scores may warrant new/cloned scenario",
+      "direction": "forward"
+    },
+    {
+      "id": "e11",
+      "from": "n9",
+      "to": "n5",
+      "label": "adjust scenario",
+      "desc": "Excluded sites removed; can be re-included with reason",
+      "direction": "forward"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "text": "Where does geospatial grounding live — on Study or Scenario?",
+      "category": "data-model",
+      "priority": "high",
+      "notes": "Lorie argues Scenario (8/14): changing geo on study loses history. Jacqueline initially thought Study but agreed with Lorie's rationale."
+    },
+    {
+      "id": "q2",
+      "text": "How do new filter fields get created when protocol has novel requirements?",
+      "category": "process",
+      "priority": "high",
+      "notes": "Multi-step: protocol ingestion → identify net-new requirement → create field on HCF/Investigator → add to criteria-based search. Could be Flow-automated."
+    },
+    {
+      "id": "q3",
+      "text": "What are the limits on criteria-based search & filter UI with 90+ requirements?",
+      "category": "ux",
+      "priority": "high",
+      "notes": "Lorie investigating. Too many filters = unusable scrolling. Need collapsible categories. Not fixable in OOTB component — would need custom UI."
+    },
+    {
+      "id": "q4",
+      "text": "Can Document AI handle 35-233 page protocols with intelligent chunking?",
+      "category": "ingestion",
+      "priority": "high",
+      "notes": "Testing needed. Data Libraries does header-based chunking but may not be sufficient. Both Lorie and Jacqueline testing independently."
+    },
+    {
+      "id": "q5",
+      "text": "What does the workflow approval process look like for scenarios?",
+      "category": "process",
+      "priority": "medium",
+      "notes": "Not every scenario needs approval — only the one chosen for feasibility. Editing approved scenario requires re-approval."
+    },
+    {
+      "id": "q6",
+      "text": "How do feasibility answers get stored and pre-filled for future studies?",
+      "category": "data-model",
+      "priority": "medium",
+      "notes": "Stored on site/investigator record historically. Pre-fill from prior answers. Confirms things that may have changed."
+    },
+    {
+      "id": "q7",
+      "text": "Should scoring weights be hardcoded or customer-configurable?",
+      "category": "scoring",
+      "priority": "medium",
+      "notes": "Current: 3 fixed (velocity, enrollment, engagement). Future: larger bucket, customer picks their own. Needs AI/formula scoring mechanism."
+    },
+    {
+      "id": "q8",
+      "text": "How does the skip logic work when cloning a scenario?",
+      "category": "process",
+      "priority": "medium",
+      "notes": "Lorie: clone gets a \"tick\" that lets you skip earlier steps and go directly to the piece you want to change. Stage management rules."
+    },
+    {
+      "id": "q9",
+      "text": "What is the handoff model from demo → product (Charmaine)?",
+      "category": "product",
+      "priority": "medium",
+      "notes": "Show visionary version + \"here's what we recommend next.\" Product makes final calls. They know platform tricks we may not."
+    },
+    {
+      "id": "q10",
+      "text": "How should engagement profile / site satisfaction factor into selection?",
+      "category": "scoring",
+      "priority": "low",
+      "notes": "Soft factors: were they responsive? problematic? Sites hate redundant questions. CROs want to be \"swiped right.\" Sentiment early triggers."
+    },
+    {
+      "id": "q11",
+      "text": "What is the Dreamforce booth demo scope (3-5 min)?",
+      "category": "product",
+      "priority": "low",
+      "notes": "Must caveat as inspirational. Risk: customer thinks product → SI builds for $3M/2yr → customer burned → never comes back."
+    }
+  ],
+  "matrix": [
+    {
+      "id": "m1",
+      "feature": "Criteria-Based Search & Filter",
+      "status": "ootb",
+      "mechanism": "OOTB component (tweaked config)",
+      "notes": "Works but UI breaks with many filters. Needs collapsible categories. Each filter = a field on the record."
+    },
+    {
+      "id": "m2",
+      "feature": "Hard Filter Application (custom)",
+      "status": "custom",
+      "mechanism": "Apex (filterSitesByRequirements) + LWC (U8)",
+      "notes": "Deployed in demo. Works for binary yes/no. OOTB uses Investigational Product for storage capabilities."
+    },
+    {
+      "id": "m3",
+      "feature": "Protocol Ingestion",
+      "status": "unknown",
+      "mechanism": "Document AI / Data Libraries / MuleSoft",
+      "notes": "Untested with real protocols. Intelligent chunking unclear. 35-233 pages."
+    },
+    {
+      "id": "m4",
+      "feature": "Scenario CRUD",
+      "status": "ootb",
+      "mechanism": "Standard object records + clone button",
+      "notes": "Site_Scenario__c exists. Clone = new record with same members. Edit = same record."
+    },
+    {
+      "id": "m5",
+      "feature": "Workflow Approval on Scenario",
+      "status": "ootb",
+      "mechanism": "Approval Process (standard)",
+      "notes": "Standard approval processes. Need to define criteria for when approval is required."
+    },
+    {
+      "id": "m6",
+      "feature": "Feasibility Questionnaire",
+      "status": "unknown",
+      "mechanism": "Surveys? Custom LWC? External tool?",
+      "notes": "Need: pre-fill from history, store answers on site record, 2-week async process. Viva does NOT do site ID."
+    },
+    {
+      "id": "m7",
+      "feature": "Scoring & Weighting Engine",
+      "status": "custom",
+      "mechanism": "Apex formula / AI agent / BYOM",
+      "notes": "Current: hardcoded 3 weights. Future: configurable bucket. Needs discovery model or AI scoring."
+    },
+    {
+      "id": "m8",
+      "feature": "Geospatial Grounding (country mix)",
+      "status": "custom",
+      "mechanism": "Fields on Scenario + Apex filtering",
+      "notes": "Lives on Scenario per Lorie. Radius/country/patient count rules. History preserved per scenario."
+    },
+    {
+      "id": "m9",
+      "feature": "Site Exclusion with Reason Tracking",
+      "status": "custom",
+      "mechanism": "Junction object field + history tracking",
+      "notes": "Must capture WHY excluded. Reversible. Reason visible when considering re-inclusion."
+    },
+    {
+      "id": "m10",
+      "feature": "Stage Management / Skip Logic",
+      "status": "ootb",
+      "mechanism": "Fulfillment Steps (Lorie attempted)",
+      "notes": "OOTB object exists but was broken in demo. Rules: \"if cloned, skip to step X.\" Needs investigation."
+    },
+    {
+      "id": "m11",
+      "feature": "Collapsible Filter Categories",
+      "status": "inspirational",
+      "mechanism": "Custom LWC with grouped chevrons",
+      "notes": "Lorie: \"we'd have to create our own UI.\" Give to product as visionary version."
+    },
+    {
+      "id": "m12",
+      "feature": "AI Fuzzy Match (protocol → filters)",
+      "status": "inspirational",
+      "mechanism": "Agentforce / prompt template",
+      "notes": "Map protocol text to existing filter fields. \"The entire point of AI being involved.\""
+    },
+    {
+      "id": "m13",
+      "feature": "Pre-fill Feasibility from History",
+      "status": "custom",
+      "mechanism": "Query prior answers + auto-populate",
+      "notes": "Sites hate being re-asked. Pre-fill and ask to confirm. Feeds sentiment/engagement."
+    }
+  ]
+}
