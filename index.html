@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Site ID Productization Planner</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface-2: #232733;
+  --border: #2e3345;
+  --text: #e4e7ef;
+  --text-muted: #8b90a0;
+  --accent: #6c8cff;
+  --accent-hover: #8aa4ff;
+  --danger: #ff6b6b;
+  --success: #4ecdc4;
+  --warning: #ffd166;
+  --radius: 8px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.header h1 { font-size: 18px; font-weight: 600; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+
+.sync-status {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sync-status.connected { background: rgba(78,205,196,0.15); color: var(--success); }
+.sync-status.offline { background: rgba(255,107,107,0.15); color: var(--danger); }
+.sync-status.local { background: rgba(139,144,160,0.15); color: var(--text-muted); }
+.sync-status.saving { background: rgba(108,140,255,0.15); color: var(--accent); }
+
+.sync-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.btn {
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-danger { border-color: var(--danger); color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: #fff; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0 24px;
+}
+
+.tab {
+  padding: 10px 20px;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.panel { display: none; height: calc(100vh - 97px); }
+.panel.active { display: flex; flex-direction: column; }
+
+/* ===== PROCESS FLOW ===== */
+#flow-panel { position: relative; }
+
+.flow-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.flow-toolbar .mode-btn {
+  padding: 5px 12px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.flow-toolbar .mode-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.flow-canvas-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+#flow-svg {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0; left: 0;
+  pointer-events: none;
+}
+
+.flow-node {
+  position: absolute;
+  min-width: 140px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: grab;
+  user-select: none;
+  z-index: 10;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.flow-node:hover { border-color: var(--accent); }
+.flow-node.selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(108,140,255,0.25); }
+.flow-node.connecting { border-color: var(--success); box-shadow: 0 0 0 2px rgba(78,205,196,0.25); }
+
+.flow-node .node-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.flow-node .node-desc { font-size: 11px; color: var(--text-muted); max-width: 200px; }
+
+.flow-node .node-delete {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.flow-node:hover .node-delete { display: flex; }
+
+.edge-label {
+  position: absolute;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 5;
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.edge-label:hover { border-color: var(--accent); color: var(--text); }
+
+/* ===== OPEN QUESTIONS ===== */
+#questions-panel { padding: 20px 24px; overflow-y: auto; }
+
+.questions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.questions-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.filter-chip {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.questions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+.question-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  position: relative;
+}
+
+.question-card .q-category {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.question-card .q-text { font-size: 14px; margin-bottom: 8px; line-height: 1.4; }
+
+.question-card .q-notes {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.question-card .q-priority {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.q-priority.high { background: var(--danger); }
+.q-priority.medium { background: var(--warning); }
+.q-priority.low { background: var(--success); }
+
+.question-card .q-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+.question-card .q-actions button {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.question-card .q-actions button:hover { color: var(--text); border-color: var(--text-muted); }
+
+/* ===== CAPABILITY MATRIX ===== */
+#matrix-panel { padding: 20px 24px; overflow-y: auto; }
+
+.matrix-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.matrix-table { width: 100%; border-collapse: collapse; }
+
+.matrix-table th, .matrix-table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.matrix-table th {
+  background: var(--surface);
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+}
+
+.matrix-table td { background: var(--surface-2); }
+.matrix-table tr:hover td { background: var(--surface); }
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.status-badge.ootb { background: rgba(78,205,196,0.15); color: var(--success); }
+.status-badge.custom { background: rgba(255,209,102,0.15); color: var(--warning); }
+.status-badge.inspirational { background: rgba(108,140,255,0.15); color: var(--accent); }
+.status-badge.unknown { background: rgba(139,144,160,0.15); color: var(--text-muted); }
+
+.matrix-table .row-actions { display: flex; gap: 6px; }
+
+.matrix-table .row-actions button {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.matrix-table .row-actions button:hover { color: var(--text); }
+
+/* ===== MODALS ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 400px;
+  max-width: 500px;
+}
+
+.modal h3 { margin-bottom: 16px; font-size: 16px; }
+
+.modal label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  margin-top: 12px;
+}
+
+.modal input, .modal textarea, .modal select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.modal textarea { min-height: 80px; resize: vertical; }
+.modal input:focus, .modal textarea:focus, .modal select:focus { outline: none; border-color: var(--accent); }
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 20px;
+  font-size: 13px;
+  z-index: 2000;
+  animation: slideIn 0.3s ease;
+}
+
+.toast.success { border-color: var(--success); }
+.toast.error { border-color: var(--danger); }
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Site ID — Productization Planner</h1>
+  <div class="header-actions">
+    <div class="sync-status local" id="sync-status">
+      <div class="sync-dot"></div>
+      <span id="sync-label">Local</span>
+    </div>
+    <button class="btn btn-sm" onclick="publishState()">Publish</button>
+    <button class="btn btn-sm" onclick="pullState()">Pull Latest</button>
+    <button class="btn btn-sm" onclick="exportData()">Export</button>
+    <button class="btn btn-sm" onclick="document.getElementById('import-file').click()">Import</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-panel="flow-panel">Process Flow</div>
+  <div class="tab" data-panel="questions-panel">Open Questions</div>
+  <div class="tab" data-panel="matrix-panel">Capability Matrix</div>
+</div>
+
+<!-- PROCESS FLOW -->
+<div id="flow-panel" class="panel active">
+  <div class="flow-toolbar">
+    <button class="mode-btn active" data-mode="move" onclick="setFlowMode('move')">Move</button>
+    <button class="mode-btn" data-mode="connect" onclick="setFlowMode('connect')">Connect</button>
+    <button class="mode-btn" data-mode="delete" onclick="setFlowMode('delete')">Delete</button>
+    <span style="color:var(--text-muted)">|</span>
+    <button class="btn btn-sm" onclick="addNode()">+ Add Node</button>
+    <span style="flex:1"></span>
+    <span style="color:var(--text-muted);font-size:12px">Double-click node to edit &bull; Connect mode: click source then target &bull; Click edge label to edit</span>
+  </div>
+  <div style="position:absolute;bottom:16px;left:24px;display:flex;gap:16px;z-index:20;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 16px;font-size:11px;color:var(--text-muted);">
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--success);vertical-align:middle;margin-right:4px"></span>Complete / OOTB</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--warning);vertical-align:middle;margin-right:4px"></span>In Progress / Custom</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--danger);vertical-align:middle;margin-right:4px"></span>Blocked / Unknown</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--accent);vertical-align:middle;margin-right:4px"></span>AI / Agent</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;border:1px solid var(--border);vertical-align:middle;margin-right:4px"></span>Default</span>
+  </div>
+  <div class="flow-canvas-wrap">
+    <svg id="flow-svg"></svg>
+    <div id="flow-nodes"></div>
+  </div>
+</div>
+
+<!-- OPEN QUESTIONS -->
+<div id="questions-panel" class="panel">
+  <div class="questions-header">
+    <div class="questions-filters">
+      <div class="filter-chip active" data-filter="all" onclick="filterQuestions('all')">All</div>
+      <div class="filter-chip" data-filter="process" onclick="filterQuestions('process')">Process</div>
+      <div class="filter-chip" data-filter="data-model" onclick="filterQuestions('data-model')">Data Model</div>
+      <div class="filter-chip" data-filter="ingestion" onclick="filterQuestions('ingestion')">Ingestion</div>
+      <div class="filter-chip" data-filter="ux" onclick="filterQuestions('ux')">UX</div>
+      <div class="filter-chip" data-filter="product" onclick="filterQuestions('product')">Product</div>
+      <div class="filter-chip" data-filter="scoring" onclick="filterQuestions('scoring')">Scoring</div>
+    </div>
+    <button class="btn btn-primary" onclick="openQuestionModal()">+ Add Question</button>
+  </div>
+  <div class="questions-grid" id="questions-grid"></div>
+</div>
+
+<!-- CAPABILITY MATRIX -->
+<div id="matrix-panel" class="panel">
+  <div class="matrix-header">
+    <div><span style="font-size:12px;color:var(--text-muted)">Feature areas mapped to implementation status</span></div>
+    <button class="btn btn-primary" onclick="openMatrixModal()">+ Add Capability</button>
+  </div>
+  <table class="matrix-table">
+    <thead>
+      <tr>
+        <th>Feature Area</th>
+        <th>Status</th>
+        <th>Platform Mechanism</th>
+        <th>Notes / Open Issues</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="matrix-body"></tbody>
+  </table>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="node-modal">
+  <div class="modal">
+    <h3 id="node-modal-title">Edit Node</h3>
+    <label>Title</label>
+    <input id="node-title-input" placeholder="e.g., Protocol Ingestion">
+    <label>Description</label>
+    <textarea id="node-desc-input" placeholder="What happens at this step..."></textarea>
+    <label>Color</label>
+    <select id="node-color-input">
+      <option value="default">Default (blue border)</option>
+      <option value="success">Green (complete/OOTB)</option>
+      <option value="warning">Yellow (in progress/custom)</option>
+      <option value="danger">Red (blocked/unknown)</option>
+      <option value="accent">Purple (AI/agent)</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('node-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNode()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="edge-modal">
+  <div class="modal">
+    <h3>Edit Connection</h3>
+    <label>Label (shown on connector)</label>
+    <input id="edge-label-input" placeholder="e.g., triggers, feeds into, blocks">
+    <label>Direction</label>
+    <select id="edge-direction-input">
+      <option value="forward">Forward (A → B)</option>
+      <option value="backward">Backward (A ← B)</option>
+      <option value="both">Bidirectional (A ↔ B)</option>
+      <option value="none">No arrows</option>
+    </select>
+    <label>Description</label>
+    <textarea id="edge-desc-input" placeholder="Detailed description of this relationship..."></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deleteCurrentEdge()">Delete</button>
+      <span style="flex:1"></span>
+      <button class="btn" onclick="closeModal('edge-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdge()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="question-modal">
+  <div class="modal">
+    <h3 id="question-modal-title">Add Question</h3>
+    <label>Question</label>
+    <textarea id="q-text-input" placeholder="What needs to be answered?"></textarea>
+    <label>Category</label>
+    <select id="q-category-input">
+      <option value="process">Process</option>
+      <option value="data-model">Data Model</option>
+      <option value="ingestion">Ingestion</option>
+      <option value="ux">UX</option>
+      <option value="product">Product</option>
+      <option value="scoring">Scoring</option>
+    </select>
+    <label>Priority</label>
+    <select id="q-priority-input">
+      <option value="high">High</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+    </select>
+    <label>Notes / Context</label>
+    <textarea id="q-notes-input" placeholder="Source, who raised it, related decisions..."></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('question-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveQuestion()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="matrix-modal">
+  <div class="modal">
+    <h3 id="matrix-modal-title">Add Capability</h3>
+    <label>Feature Area</label>
+    <input id="m-feature-input" placeholder="e.g., Hard Filter Application">
+    <label>Status</label>
+    <select id="m-status-input">
+      <option value="ootb">OOTB (Out of the Box)</option>
+      <option value="custom">Custom Build Required</option>
+      <option value="inspirational">Inspirational / Future</option>
+      <option value="unknown">Unknown / Needs Research</option>
+    </select>
+    <label>Platform Mechanism</label>
+    <input id="m-mechanism-input" placeholder="e.g., Criteria-Based Search & Filter, Apex, Flow...">
+    <label>Notes / Open Issues</label>
+    <textarea id="m-notes-input" placeholder="Limitations, dependencies, decisions needed..."></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('matrix-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMatrixRow()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== CONFIG =====
+// GITHUB_TOKEN and REPO will be set during deploy. If empty, runs in local-only mode.
+const GITHUB_TOKEN = '%%PLANNER_TOKEN%%';
+const GITHUB_REPO = 'jboisvert-salesforce/site-id-planner';
+const STATE_PATH = 'state.json';
+const IS_CONFIGURED = GITHUB_TOKEN && !GITHUB_TOKEN.includes('%%');
+
+// ===== STATE =====
+let state = loadLocalState();
+let editingNodeId = null;
+let editingEdgeId = null;
+let editingQuestionId = null;
+let editingMatrixId = null;
+
+function defaultState() {
+  return {
+    nodes: [
+      { id: 'n1', title: 'Protocol Ingestion', desc: 'Document AI parses protocol → extracts requirements, geo, therapeutic area', x: 80, y: 80, color: 'warning' },
+      { id: 'n2', title: 'Geospatial Grounding', desc: 'Define country mix, patient radius, geographic rules. Lives on SCENARIO.', x: 350, y: 80, color: 'default' },
+      { id: 'n3', title: 'Hard Filter Application', desc: 'Match protocol requirements to site capabilities (freezer, imaging, lab certs)', x: 650, y: 80, color: 'success' },
+      { id: 'n4', title: 'Scoring & Weighting', desc: 'Apply velocity/enrollment/engagement weights. Future: customer-defined bucket', x: 650, y: 250, color: 'warning' },
+      { id: 'n5', title: 'Scenario Creation', desc: 'Create/clone/edit scenarios. Each is a named collection of sites with weights', x: 350, y: 250, color: 'success' },
+      { id: 'n6', title: 'Feasibility Assessment', desc: 'Send questionnaire to selected sites. 2-week runway. Pre-fill from history.', x: 80, y: 250, color: 'danger' },
+      { id: 'n7', title: 'Workflow Approval', desc: 'Approve scenario for feasibility send. Re-approval needed after edits.', x: 80, y: 420, color: 'danger' },
+      { id: 'n8', title: 'Rescore from Results', desc: 'Feasibility results feed back. Site scored 7 might drop to 3. Track reasons.', x: 350, y: 420, color: 'accent' },
+      { id: 'n9', title: 'Site Exclusion/Inclusion', desc: 'Exclude sites with tracked reasons. Can re-include later. History preserved.', x: 650, y: 420, color: 'warning' },
+    ],
+    edges: [
+      { id: 'e1', from: 'n1', to: 'n2', label: 'extracts geo rules', desc: '', direction: 'forward' },
+      { id: 'e2', from: 'n1', to: 'n3', label: 'extracts requirements', desc: 'AI fuzzy-matches protocol text to existing filter fields', direction: 'forward' },
+      { id: 'e3', from: 'n2', to: 'n3', label: 'narrows pool', desc: '', direction: 'forward' },
+      { id: 'e4', from: 'n3', to: 'n4', label: 'filtered sites', desc: '', direction: 'forward' },
+      { id: 'e5', from: 'n4', to: 'n5', label: 'ranked list', desc: '', direction: 'forward' },
+      { id: 'e6', from: 'n5', to: 'n6', label: 'chosen scenario', desc: 'Only the selected scenario goes to feasibility', direction: 'forward' },
+      { id: 'e7', from: 'n5', to: 'n7', label: 'needs approval', desc: 'Workflow approval required before feasibility send', direction: 'forward' },
+      { id: 'e8', from: 'n6', to: 'n8', label: 'results return', desc: '~2 weeks. Answers populate fields on site record.', direction: 'forward' },
+      { id: 'e9', from: 'n8', to: 'n9', label: 'triggers exclusion', desc: 'e.g., freezer broke → exclude with reason', direction: 'forward' },
+      { id: 'e10', from: 'n8', to: 'n5', label: 'feeds back', desc: 'New scores may warrant new/cloned scenario', direction: 'forward' },
+      { id: 'e11', from: 'n9', to: 'n5', label: 'adjust scenario', desc: 'Excluded sites removed; can be re-included with reason', direction: 'forward' },
+    ],
+    questions: [
+      { id: 'q1', text: 'Where does geospatial grounding live — on Study or Scenario?', category: 'data-model', priority: 'high', notes: 'Lorie argues Scenario (8/14): changing geo on study loses history. Jacqueline initially thought Study but agreed with Lorie\'s rationale.' },
+      { id: 'q2', text: 'How do new filter fields get created when protocol has novel requirements?', category: 'process', priority: 'high', notes: 'Multi-step: protocol ingestion → identify net-new requirement → create field on HCF/Investigator → add to criteria-based search. Could be Flow-automated.' },
+      { id: 'q3', text: 'What are the limits on criteria-based search & filter UI with 90+ requirements?', category: 'ux', priority: 'high', notes: 'Lorie investigating. Too many filters = unusable scrolling. Need collapsible categories. Not fixable in OOTB component — would need custom UI.' },
+      { id: 'q4', text: 'Can Document AI handle 35-233 page protocols with intelligent chunking?', category: 'ingestion', priority: 'high', notes: 'Testing needed. Data Libraries does header-based chunking but may not be sufficient. Both Lorie and Jacqueline testing independently.' },
+      { id: 'q5', text: 'What does the workflow approval process look like for scenarios?', category: 'process', priority: 'medium', notes: 'Not every scenario needs approval — only the one chosen for feasibility. Editing approved scenario requires re-approval.' },
+      { id: 'q6', text: 'How do feasibility answers get stored and pre-filled for future studies?', category: 'data-model', priority: 'medium', notes: 'Stored on site/investigator record historically. Pre-fill from prior answers. Confirms things that may have changed.' },
+      { id: 'q7', text: 'Should scoring weights be hardcoded or customer-configurable?', category: 'scoring', priority: 'medium', notes: 'Current: 3 fixed (velocity, enrollment, engagement). Future: larger bucket, customer picks their own. Needs AI/formula scoring mechanism.' },
+      { id: 'q8', text: 'How does the skip logic work when cloning a scenario?', category: 'process', priority: 'medium', notes: 'Lorie: clone gets a "tick" that lets you skip earlier steps and go directly to the piece you want to change. Stage management rules.' },
+      { id: 'q9', text: 'What is the handoff model from demo → product (Charmaine)?', category: 'product', priority: 'medium', notes: 'Show visionary version + "here\'s what we recommend next." Product makes final calls. They know platform tricks we may not.' },
+      { id: 'q10', text: 'How should engagement profile / site satisfaction factor into selection?', category: 'scoring', priority: 'low', notes: 'Soft factors: were they responsive? problematic? Sites hate redundant questions. CROs want to be "swiped right." Sentiment early triggers.' },
+      { id: 'q11', text: 'What is the Dreamforce booth demo scope (3-5 min)?', category: 'product', priority: 'low', notes: 'Must caveat as inspirational. Risk: customer thinks product → SI builds for $3M/2yr → customer burned → never comes back.' },
+    ],
+    matrix: [
+      { id: 'm1', feature: 'Criteria-Based Search & Filter', status: 'ootb', mechanism: 'OOTB component (tweaked config)', notes: 'Works but UI breaks with many filters. Needs collapsible categories. Each filter = a field on the record.' },
+      { id: 'm2', feature: 'Hard Filter Application (custom)', status: 'custom', mechanism: 'Apex (filterSitesByRequirements) + LWC (U8)', notes: 'Deployed in demo. Works for binary yes/no. OOTB uses Investigational Product for storage capabilities.' },
+      { id: 'm3', feature: 'Protocol Ingestion', status: 'unknown', mechanism: 'Document AI / Data Libraries / MuleSoft', notes: 'Untested with real protocols. Intelligent chunking unclear. 35-233 pages.' },
+      { id: 'm4', feature: 'Scenario CRUD', status: 'ootb', mechanism: 'Standard object records + clone button', notes: 'Site_Scenario__c exists. Clone = new record with same members. Edit = same record.' },
+      { id: 'm5', feature: 'Workflow Approval on Scenario', status: 'ootb', mechanism: 'Approval Process (standard)', notes: 'Standard approval processes. Need to define criteria for when approval is required.' },
+      { id: 'm6', feature: 'Feasibility Questionnaire', status: 'unknown', mechanism: 'Surveys? Custom LWC? External tool?', notes: 'Need: pre-fill from history, store answers on site record, 2-week async process. Viva does NOT do site ID.' },
+      { id: 'm7', feature: 'Scoring & Weighting Engine', status: 'custom', mechanism: 'Apex formula / AI agent / BYOM', notes: 'Current: hardcoded 3 weights. Future: configurable bucket. Needs discovery model or AI scoring.' },
+      { id: 'm8', feature: 'Geospatial Grounding (country mix)', status: 'custom', mechanism: 'Fields on Scenario + Apex filtering', notes: 'Lives on Scenario per Lorie. Radius/country/patient count rules. History preserved per scenario.' },
+      { id: 'm9', feature: 'Site Exclusion with Reason Tracking', status: 'custom', mechanism: 'Junction object field + history tracking', notes: 'Must capture WHY excluded. Reversible. Reason visible when considering re-inclusion.' },
+      { id: 'm10', feature: 'Stage Management / Skip Logic', status: 'ootb', mechanism: 'Fulfillment Steps (Lorie attempted)', notes: 'OOTB object exists but was broken in demo. Rules: "if cloned, skip to step X." Needs investigation.' },
+      { id: 'm11', feature: 'Collapsible Filter Categories', status: 'inspirational', mechanism: 'Custom LWC with grouped chevrons', notes: 'Lorie: "we\'d have to create our own UI." Give to product as visionary version.' },
+      { id: 'm12', feature: 'AI Fuzzy Match (protocol → filters)', status: 'inspirational', mechanism: 'Agentforce / prompt template', notes: 'Map protocol text to existing filter fields. "The entire point of AI being involved."' },
+      { id: 'm13', feature: 'Pre-fill Feasibility from History', status: 'custom', mechanism: 'Query prior answers + auto-populate', notes: 'Sites hate being re-asked. Pre-fill and ask to confirm. Feeds sentiment/engagement.' },
+    ],
+  };
+}
+
+function loadLocalState() {
+  try {
+    const saved = localStorage.getItem('site-id-planner-v2');
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return defaultState();
+}
+
+function saveLocalState() {
+  localStorage.setItem('site-id-planner-v2', JSON.stringify(state));
+}
+
+// ===== GITHUB SYNC =====
+async function publishState() {
+  if (!IS_CONFIGURED) {
+    toast('Running in local mode — no GitHub configured', 'error');
+    return;
+  }
+  updateSyncStatus('saving');
+  try {
+    // Get current file SHA (needed for updates)
+    let sha = null;
+    try {
+      const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${STATE_PATH}`, {
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        sha = data.sha;
+      }
+    } catch(e) {}
+
+    const body = {
+      message: 'Update planner state',
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2)))),
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${STATE_PATH}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${GITHUB_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      toast('Published to shared state', 'success');
+      updateSyncStatus('connected');
+    } else {
+      const err = await res.json();
+      toast('Publish failed: ' + (err.message || res.status), 'error');
+      updateSyncStatus('offline');
+    }
+  } catch(e) {
+    toast('Publish failed: ' + e.message, 'error');
+    updateSyncStatus('offline');
+  }
+}
+
+async function pullState() {
+  if (!IS_CONFIGURED) {
+    toast('Running in local mode — no GitHub configured', 'error');
+    return;
+  }
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${STATE_PATH}`, {
+      headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3.raw' },
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      state = data;
+      saveLocalState();
+      renderAll();
+      toast('Pulled latest state', 'success');
+      updateSyncStatus('connected');
+    } else if (res.status === 404) {
+      toast('No shared state found — publish first', 'error');
+    } else {
+      toast('Pull failed: ' + res.status, 'error');
+    }
+  } catch(e) {
+    toast('Pull failed: ' + e.message, 'error');
+  }
+}
+
+// Auto-pull on load if configured
+if (IS_CONFIGURED) {
+  pullState();
+}
+
+function updateSyncStatus(status) {
+  const el = document.getElementById('sync-status');
+  const label = document.getElementById('sync-label');
+  el.className = 'sync-status ' + status;
+  const labels = { connected: 'Synced', offline: 'Offline', local: 'Local Only', saving: 'Saving...' };
+  label.textContent = labels[status] || status;
+}
+
+function toast(msg, type) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ===== TABS =====
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.panel).classList.add('active');
+    if (tab.dataset.panel === 'flow-panel') renderFlow();
+  });
+});
+
+// ===== FLOW =====
+let flowMode = 'move';
+let connectFrom = null;
+let dragNode = null;
+let dragOffset = { x: 0, y: 0 };
+
+function setFlowMode(mode) {
+  flowMode = mode;
+  connectFrom = null;
+  document.querySelectorAll('.flow-toolbar .mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  document.querySelectorAll('.flow-node').forEach(n => {
+    n.classList.remove('selected', 'connecting');
+  });
+}
+
+function addNode() {
+  const id = 'n' + Date.now();
+  const wrap = document.querySelector('.flow-canvas-wrap');
+  const rect = wrap.getBoundingClientRect();
+  state.nodes.push({
+    id,
+    title: 'New Step',
+    desc: '',
+    x: Math.random() * (rect.width - 200) + 40,
+    y: Math.random() * (rect.height - 100) + 40,
+    color: 'default'
+  });
+  saveLocalState();
+  renderFlow();
+  editingNodeId = id;
+  document.getElementById('node-modal-title').textContent = 'New Node';
+  document.getElementById('node-title-input').value = '';
+  document.getElementById('node-desc-input').value = '';
+  document.getElementById('node-color-input').value = 'default';
+  openModal('node-modal');
+}
+
+function renderFlow() {
+  if (!state) return;
+  const nodesContainer = document.getElementById('flow-nodes');
+  const svg = document.getElementById('flow-svg');
+
+  nodesContainer.innerHTML = state.nodes.map(n => {
+    const borderColor = {
+      default: 'var(--border)',
+      success: 'var(--success)',
+      warning: 'var(--warning)',
+      danger: 'var(--danger)',
+      accent: 'var(--accent)'
+    }[n.color] || 'var(--border)';
+
+    return `<div class="flow-node" data-id="${n.id}" style="left:${n.x}px;top:${n.y}px;border-color:${borderColor}">
+      <div class="node-title">${escHtml(n.title)}</div>
+      ${n.desc ? `<div class="node-desc">${escHtml(n.desc)}</div>` : ''}
+      <div class="node-delete" onclick="event.stopPropagation();deleteNode('${n.id}')">&#215;</div>
+    </div>`;
+  }).join('');
+
+  // SVG edges with directional arrows
+  const wrap = document.querySelector('.flow-canvas-wrap');
+  const wRect = wrap.getBoundingClientRect();
+  svg.setAttribute('width', wRect.width);
+  svg.setAttribute('height', wRect.height);
+
+  let defs = `<defs>
+    <marker id="arrow-fwd" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6c8cff"/>
+    </marker>
+    <marker id="arrow-bwd" markerWidth="10" markerHeight="7" refX="1" refY="3.5" orient="auto-start-reverse">
+      <polygon points="10 0, 0 3.5, 10 7" fill="#6c8cff"/>
+    </marker>
+  </defs>`;
+
+  let lines = '';
+
+  // Remove old edge labels
+  document.querySelectorAll('.edge-label').forEach(el => el.remove());
+
+  state.edges.forEach(edge => {
+    const fromNode = state.nodes.find(n => n.id === edge.from);
+    const toNode = state.nodes.find(n => n.id === edge.to);
+    if (!fromNode || !toNode) return;
+
+    const fromEl = nodesContainer.querySelector(`[data-id="${edge.from}"]`);
+    const toEl = nodesContainer.querySelector(`[data-id="${edge.to}"]`);
+    if (!fromEl || !toEl) return;
+
+    const x1 = fromNode.x + fromEl.offsetWidth / 2;
+    const y1 = fromNode.y + fromEl.offsetHeight / 2;
+    const x2 = toNode.x + toEl.offsetWidth / 2;
+    const y2 = toNode.y + toEl.offsetHeight / 2;
+
+    const dir = edge.direction || 'forward';
+    let markerStart = '';
+    let markerEnd = '';
+
+    if (dir === 'forward') {
+      markerEnd = 'marker-end="url(#arrow-fwd)"';
+    } else if (dir === 'backward') {
+      markerStart = 'marker-start="url(#arrow-bwd)"';
+    } else if (dir === 'both') {
+      markerEnd = 'marker-end="url(#arrow-fwd)"';
+      markerStart = 'marker-start="url(#arrow-bwd)"';
+    }
+
+    lines += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#6c8cff" stroke-width="1.5" ${markerEnd} ${markerStart} opacity="0.6"/>`;
+
+    // Edge label
+    const labelText = edge.label || (dir !== 'forward' ? dir : '');
+    if (labelText || true) {
+      const label = document.createElement('div');
+      label.className = 'edge-label';
+      label.textContent = edge.label || '(click to label)';
+      if (!edge.label) label.style.opacity = '0.4';
+      label.style.left = ((x1 + x2) / 2 - 50) + 'px';
+      label.style.top = ((y1 + y2) / 2 - 10) + 'px';
+      label.onclick = () => editEdge(edge.id);
+      wrap.appendChild(label);
+    }
+  });
+
+  svg.innerHTML = defs + lines;
+
+  // Attach node events
+  nodesContainer.querySelectorAll('.flow-node').forEach(el => {
+    el.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('node-delete')) return;
+      const id = el.dataset.id;
+
+      if (flowMode === 'connect') {
+        if (!connectFrom) {
+          connectFrom = id;
+          el.classList.add('connecting');
+        } else if (connectFrom !== id) {
+          const edgeId = 'e' + Date.now();
+          state.edges.push({ id: edgeId, from: connectFrom, to: id, label: '', desc: '', direction: 'forward' });
+          connectFrom = null;
+          saveLocalState();
+          renderFlow();
+          editingEdgeId = edgeId;
+          document.getElementById('edge-label-input').value = '';
+          document.getElementById('edge-direction-input').value = 'forward';
+          document.getElementById('edge-desc-input').value = '';
+          openModal('edge-modal');
+        }
+      } else if (flowMode === 'delete') {
+        deleteNode(id);
+      } else {
+        dragNode = id;
+        const nodeRect = el.getBoundingClientRect();
+        dragOffset.x = e.clientX - nodeRect.left;
+        dragOffset.y = e.clientY - nodeRect.top;
+        el.style.cursor = 'grabbing';
+      }
+    });
+
+    el.addEventListener('dblclick', () => {
+      const node = state.nodes.find(n => n.id === el.dataset.id);
+      if (!node) return;
+      editingNodeId = node.id;
+      document.getElementById('node-modal-title').textContent = 'Edit Node';
+      document.getElementById('node-title-input').value = node.title;
+      document.getElementById('node-desc-input').value = node.desc;
+      document.getElementById('node-color-input').value = node.color;
+      openModal('node-modal');
+    });
+  });
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (!dragNode || !state) return;
+  const node = state.nodes.find(n => n.id === dragNode);
+  if (!node) return;
+  const wrap = document.querySelector('.flow-canvas-wrap');
+  const wRect = wrap.getBoundingClientRect();
+  node.x = Math.max(0, e.clientX - wRect.left - dragOffset.x);
+  node.y = Math.max(0, e.clientY - wRect.top - dragOffset.y);
+  renderFlow();
+});
+
+document.addEventListener('mouseup', () => {
+  if (dragNode) {
+    dragNode = null;
+    saveLocalState();
+  }
+});
+
+function deleteNode(id) {
+  state.nodes = state.nodes.filter(n => n.id !== id);
+  state.edges = state.edges.filter(e => e.from !== id && e.to !== id);
+  saveLocalState();
+  renderFlow();
+}
+
+function saveNode() {
+  const node = state.nodes.find(n => n.id === editingNodeId);
+  if (!node) return;
+  node.title = document.getElementById('node-title-input').value || 'Untitled';
+  node.desc = document.getElementById('node-desc-input').value;
+  node.color = document.getElementById('node-color-input').value;
+  saveLocalState();
+  renderFlow();
+  closeModal('node-modal');
+}
+
+function editEdge(id) {
+  const edge = state.edges.find(e => e.id === id);
+  if (!edge) return;
+  editingEdgeId = id;
+  document.getElementById('edge-label-input').value = edge.label;
+  document.getElementById('edge-direction-input').value = edge.direction || 'forward';
+  document.getElementById('edge-desc-input').value = edge.desc;
+  openModal('edge-modal');
+}
+
+function saveEdge() {
+  const edge = state.edges.find(e => e.id === editingEdgeId);
+  if (!edge) return;
+  edge.label = document.getElementById('edge-label-input').value;
+  edge.direction = document.getElementById('edge-direction-input').value;
+  edge.desc = document.getElementById('edge-desc-input').value;
+  saveLocalState();
+  renderFlow();
+  closeModal('edge-modal');
+}
+
+function deleteCurrentEdge() {
+  state.edges = state.edges.filter(e => e.id !== editingEdgeId);
+  saveLocalState();
+  renderFlow();
+  closeModal('edge-modal');
+}
+
+// ===== QUESTIONS =====
+let questionFilter = 'all';
+
+function renderQuestions() {
+  if (!state) return;
+  const grid = document.getElementById('questions-grid');
+  const filtered = state.questions.filter(q => questionFilter === 'all' || q.category === questionFilter);
+  const priorityOrder = { high: 0, medium: 1, low: 2 };
+  filtered.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+  grid.innerHTML = filtered.map(q => `
+    <div class="question-card">
+      <div class="q-priority ${q.priority}"></div>
+      <div class="q-category">${q.category.replace('-', ' ')}</div>
+      <div class="q-text">${escHtml(q.text)}</div>
+      ${q.notes ? `<div class="q-notes">${escHtml(q.notes)}</div>` : ''}
+      <div class="q-actions">
+        <button onclick="editQuestion('${q.id}')">Edit</button>
+        <button onclick="deleteQuestion('${q.id}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterQuestions(filter) {
+  questionFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.filter === filter);
+  });
+  renderQuestions();
+}
+
+function openQuestionModal(id) {
+  editingQuestionId = id || null;
+  const q = id ? state.questions.find(x => x.id === id) : null;
+  document.getElementById('question-modal-title').textContent = q ? 'Edit Question' : 'Add Question';
+  document.getElementById('q-text-input').value = q ? q.text : '';
+  document.getElementById('q-category-input').value = q ? q.category : 'process';
+  document.getElementById('q-priority-input').value = q ? q.priority : 'medium';
+  document.getElementById('q-notes-input').value = q ? q.notes : '';
+  openModal('question-modal');
+}
+
+function editQuestion(id) { openQuestionModal(id); }
+
+function saveQuestion() {
+  const text = document.getElementById('q-text-input').value;
+  if (!text) return;
+  const data = {
+    text,
+    category: document.getElementById('q-category-input').value,
+    priority: document.getElementById('q-priority-input').value,
+    notes: document.getElementById('q-notes-input').value,
+  };
+  if (editingQuestionId) {
+    const q = state.questions.find(x => x.id === editingQuestionId);
+    if (q) Object.assign(q, data);
+  } else {
+    state.questions.push({ id: 'q' + Date.now(), ...data });
+  }
+  saveLocalState();
+  renderQuestions();
+  closeModal('question-modal');
+}
+
+function deleteQuestion(id) {
+  state.questions = state.questions.filter(q => q.id !== id);
+  saveLocalState();
+  renderQuestions();
+}
+
+// ===== MATRIX =====
+function renderMatrix() {
+  if (!state) return;
+  const body = document.getElementById('matrix-body');
+  body.innerHTML = state.matrix.map(row => `
+    <tr>
+      <td style="font-weight:500">${escHtml(row.feature)}</td>
+      <td><span class="status-badge ${row.status}">${statusLabel(row.status)}</span></td>
+      <td>${escHtml(row.mechanism)}</td>
+      <td style="color:var(--text-muted);font-size:12px">${escHtml(row.notes)}</td>
+      <td class="row-actions">
+        <button onclick="editMatrixRow('${row.id}')">Edit</button>
+        <button onclick="deleteMatrixRow('${row.id}')">Del</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function statusLabel(s) {
+  return { ootb: 'OOTB', custom: 'Custom', inspirational: 'Inspirational', unknown: 'Unknown' }[s] || s;
+}
+
+function openMatrixModal(id) {
+  editingMatrixId = id || null;
+  const row = id ? state.matrix.find(x => x.id === id) : null;
+  document.getElementById('matrix-modal-title').textContent = row ? 'Edit Capability' : 'Add Capability';
+  document.getElementById('m-feature-input').value = row ? row.feature : '';
+  document.getElementById('m-status-input').value = row ? row.status : 'unknown';
+  document.getElementById('m-mechanism-input').value = row ? row.mechanism : '';
+  document.getElementById('m-notes-input').value = row ? row.notes : '';
+  openModal('matrix-modal');
+}
+
+function editMatrixRow(id) { openMatrixModal(id); }
+
+function saveMatrixRow() {
+  const feature = document.getElementById('m-feature-input').value;
+  if (!feature) return;
+  const data = {
+    feature,
+    status: document.getElementById('m-status-input').value,
+    mechanism: document.getElementById('m-mechanism-input').value,
+    notes: document.getElementById('m-notes-input').value,
+  };
+  if (editingMatrixId) {
+    const row = state.matrix.find(x => x.id === editingMatrixId);
+    if (row) Object.assign(row, data);
+  } else {
+    state.matrix.push({ id: 'm' + Date.now(), ...data });
+  }
+  saveLocalState();
+  renderMatrix();
+  closeModal('matrix-modal');
+}
+
+function deleteMatrixRow(id) {
+  state.matrix = state.matrix.filter(r => r.id !== id);
+  saveLocalState();
+  renderMatrix();
+}
+
+// ===== MODALS =====
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('active');
+  });
+});
+
+// ===== EXPORT / IMPORT =====
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'site-id-planner-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      state = JSON.parse(e.target.result);
+      saveLocalState();
+      renderAll();
+      toast('Imported successfully', 'success');
+    } catch(err) { toast('Invalid JSON file', 'error'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ===== UTILS =====
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderAll() {
+  renderFlow();
+  renderQuestions();
+  renderMatrix();
+}
+
+// ===== INIT =====
+if (!IS_CONFIGURED) updateSyncStatus('local');
+renderAll();
+</script>
+</body>
+</html>
