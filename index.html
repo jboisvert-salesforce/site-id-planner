@@ -629,15 +629,15 @@ let editingMatrixId = null;
 function defaultState() {
   return {
     nodes: [
-      { id: 'n1', title: 'Protocol Ingestion', desc: 'Document AI parses protocol → extracts requirements, geo, therapeutic area', x: 80, y: 80, color: 'warning' },
-      { id: 'n2', title: 'Geospatial Grounding', desc: 'Define country mix, patient radius, geographic rules. Lives on SCENARIO.', x: 350, y: 80, color: 'default' },
-      { id: 'n3', title: 'Hard Filter Application', desc: 'Match protocol requirements to site capabilities (freezer, imaging, lab certs)', x: 650, y: 80, color: 'success' },
-      { id: 'n4', title: 'Scoring & Weighting', desc: 'Apply velocity/enrollment/engagement weights. Future: customer-defined bucket', x: 650, y: 250, color: 'warning' },
-      { id: 'n5', title: 'Scenario Creation', desc: 'Create/clone/edit scenarios. Each is a named collection of sites with weights', x: 350, y: 250, color: 'success' },
-      { id: 'n6', title: 'Feasibility Assessment', desc: 'Send questionnaire to selected sites. 2-week runway. Pre-fill from history.', x: 80, y: 250, color: 'danger' },
-      { id: 'n7', title: 'Workflow Approval', desc: 'Approve scenario for feasibility send. Re-approval needed after edits.', x: 80, y: 420, color: 'danger' },
-      { id: 'n8', title: 'Rescore from Results', desc: 'Feasibility results feed back. Site scored 7 might drop to 3. Track reasons.', x: 350, y: 420, color: 'accent' },
-      { id: 'n9', title: 'Site Exclusion/Inclusion', desc: 'Exclude sites with tracked reasons. Can re-include later. History preserved.', x: 650, y: 420, color: 'warning' },
+      { id: 'n1', title: 'Protocol Ingestion', desc: 'Document AI parses protocol → extracts requirements, geo, therapeutic area', x: 55, y: 30, color: 'warning' },
+      { id: 'n2', title: 'Geospatial Grounding', desc: 'Define country mix, patient radius, geographic rules. Lives on SCENARIO.', x: 530, y: 140, color: 'default' },
+      { id: 'n3', title: 'Hard Filter Application', desc: 'Match protocol requirements to site capabilities (freezer, imaging, lab certs)', x: 1050, y: 30, color: 'success' },
+      { id: 'n4', title: 'Scoring & Weighting', desc: 'Apply velocity/enrollment/engagement weights. Future: customer-defined bucket', x: 1010, y: 240, color: 'warning' },
+      { id: 'n5', title: 'Scenario Creation', desc: 'Create/clone/edit scenarios. Each is a named collection of sites with weights', x: 510, y: 280, color: 'success' },
+      { id: 'n6', title: 'Feasibility Assessment', desc: 'Send questionnaire to selected sites. 2-week runway. Pre-fill from history.', x: 20, y: 280, color: 'danger' },
+      { id: 'n7', title: 'Workflow Approval', desc: 'Approve scenario for feasibility send. Re-approval needed after edits.', x: 210, y: 390, color: 'danger' },
+      { id: 'n8', title: 'Rescore from Results', desc: 'Feasibility results feed back. Site scored 7 might drop to 3. Track reasons.', x: 15, y: 680, color: 'accent' },
+      { id: 'n9', title: 'Site Exclusion/Inclusion', desc: 'Exclude sites with tracked reasons. Can re-include later. History preserved.', x: 780, y: 690, color: 'warning' },
     ],
     edges: [
       { id: 'e1', from: 'n1', to: 'n2', label: 'extracts geo rules', desc: '', direction: 'forward' },
