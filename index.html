@@ -1209,6 +1209,11 @@ function renderAll() {
 }
 
 // ===== INIT =====
+// ?reset in URL clears localStorage and reloads clean
+if (window.location.search.includes('reset')) {
+  localStorage.removeItem('site-id-planner-v2');
+  window.location.href = window.location.pathname;
+}
 if (!IS_CONFIGURED) updateSyncStatus('local');
 renderAll();
 </script>
